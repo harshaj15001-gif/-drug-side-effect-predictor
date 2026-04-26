@@ -1,0 +1,253 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Drug Side Effect Predictor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header .icon { font-size: 48px; margin-bottom: 10px; }
+
+    .header h1 {
+      font-size: 22px;
+      color: #1a1a2e;
+      font-weight: 700;
+    }
+
+    .header p {
+      font-size: 13px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .form-group { margin-bottom: 20px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 8px;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e8e8e8;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #333;
+      background: #fafafa;
+      outline: none;
+    }
+
+    select:focus { border-color: #4361ee; background: white; }
+
+    .slider-val {
+      float: right;
+      font-size: 13px;
+      font-weight: 700;
+      color: #4361ee;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #4361ee;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #4361ee, #7209b7);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover { opacity: 0.88; }
+
+    .result-box {
+      display: none;
+      margin-top: 24px;
+      padding: 20px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #f0f4ff, #faf0ff);
+      border: 2px solid #d0d8ff;
+      text-align: center;
+    }
+
+    .result-box .effect {
+      font-size: 26px;
+      font-weight: 800;
+      color: #4361ee;
+      margin-bottom: 6px;
+    }
+
+    .result-box .confidence {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 14px;
+    }
+
+    .result-box .details {
+      display: flex;
+      justify-content: space-around;
+      font-size: 12px;
+      color: #666;
+      border-top: 1px solid #dde;
+      padding-top: 12px;
+    }
+
+    .result-box .details span {
+      font-weight: 700;
+      color: #333;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      color: #4361ee;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    .error-box {
+      display: none;
+      margin-top: 16px;
+      padding: 12px;
+      background: #fff0f0;
+      border: 1px solid #ffcccc;
+      border-radius: 10px;
+      color: #cc0000;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .disclaimer {
+      text-align: center;
+      font-size: 11px;
+      color: #bbb;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="icon">💊</div>
+      <h1>Drug Side Effect Predictor</h1>
+      <p>ML Project · Random Forest Classifier</p>
+    </div>
+
+    <div class="form-group">
+      <label>Select Drug</label>
+      <select id="drug">
+        {% for drug in drugs %}
+        <option value="{{ drug }}">{{ drug }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Dosage (mg) <span class="slider-val" id="dosage-val">500 mg</span></label>
+      <input type="range" id="dosage" min="10" max="1000" step="10" value="500"
+             oninput="document.getElementById('dosage-val').textContent = this.value + ' mg'">
+    </div>
+
+    <div class="form-group">
+      <label>Patient Age (years) <span class="slider-val" id="age-val">25 yrs</span></label>
+      <input type="range" id="age" min="1" max="100" step="1" value="25"
+             oninput="document.getElementById('age-val').textContent = this.value + ' yrs'">
+    </div>
+
+    <button class="btn" onclick="predict()">🔍 Predict Side Effect</button>
+
+    <div class="loading" id="loading">⏳ Predicting...</div>
+    <div class="error-box" id="error-box"></div>
+
+    <div class="result-box" id="result-box">
+      <div class="effect" id="effect-text"></div>
+      <div class="confidence" id="confidence-text"></div>
+      <div class="details">
+        <div>💊 Drug<br><span id="res-drug"></span></div>
+        <div>📏 Dosage<br><span id="res-dosage"></span></div>
+        <div>🧑 Age<br><span id="res-age"></span></div>
+      </div>
+    </div>
+
+    <div class="disclaimer">⚠️ For educational purposes only. Not medical advice.</div>
+  </div>
+
+  <script>
+    async function predict() {
+      const drug   = document.getElementById("drug").value;
+      const dosage = document.getElementById("dosage").value;
+      const age    = document.getElementById("age").value;
+
+      document.getElementById("result-box").style.display = "none";
+      document.getElementById("error-box").style.display  = "none";
+      document.getElementById("loading").style.display    = "block";
+
+      const formData = new FormData();
+      formData.append("drug",   drug);
+      formData.append("dosage", dosage);
+      formData.append("age",    age);
+
+      try {
+        const res  = await fetch("/predict", { method: "POST", body: formData });
+        const data = await res.json();
+
+        document.getElementById("loading").style.display = "none";
+
+        if (data.error) {
+          document.getElementById("error-box").textContent   = "❌ " + data.error;
+          document.getElementById("error-box").style.display = "block";
+        } else {
+          document.getElementById("effect-text").textContent     = "⚠️ " + data.side_effect;
+          document.getElementById("confidence-text").textContent = "Confidence: " + data.confidence + "%";
+          document.getElementById("res-drug").textContent        = data.drug;
+          document.getElementById("res-dosage").textContent      = data.dosage + " mg";
+          document.getElementById("res-age").textContent         = data.age + " yrs";
+          document.getElementById("result-box").style.display    = "block";
+        }
+      } catch (err) {
+        document.getElementById("loading").style.display    = "none";
+        document.getElementById("error-box").textContent    = "❌ Server error. Is Flask running?";
+        document.getElementById("error-box").style.display  = "block";
+      }
+    }
+  </script>
+</body>
+</html>
